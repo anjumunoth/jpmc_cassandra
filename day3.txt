@@ -1,0 +1,162 @@
+Mongodb
+elemMatch  -- match an element of an array
+mongodb -- array of elements ; each element -- object
+$
+. -- objects;
+
+Cassandra
+list -- on basis of position
+list of maps: 
+hobbies['description']
+map: address['streetName']
+
+Tuneable consistency
+Rf -3; CL -all; {CAP will be present; partition tolerance -- compromised  }
+
+Anti entropy repair 
+1. inconsitent
+Manually repair
+nodetool command -- initiate the anti entropy repair
+
+2. Read reaquest
+CL - quorum
+RF - 3
+Hints -- 10 hours
+
+n1 -- down for 24 hours
+n1 -- come up --> no hints ; sync of data from the other replicas; start the anti entropy repair -- sync the data
+
+1. how to know the data is inconsitent 
+node which is down for a long time --> manually 
+2. Rf - 7; cl -- read -- 3
+reads to be faster ; 
+suddenly there is sudden inserts happening (lakhs)
+3. 
+
+
+
+insert for empid with salary =1000
+insert for same empid with salary = 2000
+
+
+Read 
+where all should the read(based on partition key) happen from : (append)
+1.multiple ss tables -- strategy -- index 
+2.memtables
+3. cache
+
+bloom filter -- 
+
+10:00 am -- Tej is in office 
+
+memtable
+101 sara(11:05)  
+
+ss table 
+101 tara(10:45) 1000
+
+read result --> 
+101 sara  1000
+
+static key:
+1. can a primary key be static explicitly-- no
+2. can a partition key be static explicitly -- no
+3. can the clustering key be static -- no
+4. Can there be multiple static key in a single table
+
+
+create table users(
+userId int,
+emailId text static,
+projectId text,
+primary key(userId,projectId)
+)
+
+insert into users(userId,projectId,emailid) values(101,'p1','a@gmail.com')
+insert into users(userId,projectId,emailid) values(101,'p1','b@gmail.com')
+insert into users(userId,projectId,emailid) values(101,'p2','c@gmail.com')
+
+select * from users;
+Result set: 2 Number of rows; Values in rows 
+101 p1 c@gmail.com; 
+101 p2 c@gmail.com
+
+insert into users(userId,projectId) values(101,'p3')
+select * from users;
+3 rows
+
+
+select * from users;
+
+create table user_details(
+userId int,
+emailId text static,
+username text static,
+projectid text,
+primary key(userId,projectId)
+)
+
+alter table tablename add columnname datatype;
+
+alter table tablename drop columnname datatype;
+
+Rename a column -
+	primary key  -- yes
+   non primary key -- no
+   index on a field -- rename that field -- no
+   non existent column -- error
+
+alter table tablename with option =new value;
+
+
+drop table tablename  -- schema and values will be remove
+
+truncate table tablename -- values will be removed
+
+select the rows and mark them for deletion -- RDBMS
+
+Write operation -- Neven check for its existence
+
+do 2 write op -- make it as 2 write op;
+insert -- append
+
+delete
+
+Index
+1. Priority -- primary key
+2. index on a non primary key -- search capability 
+select * from emp where salary =1000;// not allowed
+
+create an index on salary -- search on basis of salary;
+Disadv -- 
+1. maintain my index -- based on write op -- modify the index 
+2. read the data -- memtable, multiple sstables; row cache;
+3. compaction -- modify the index
+4. memory 
+
+
+1. Can i create a secondary index on primary key -- not needed. 
+topology
+no 
+
+2. can i create index on clustering fields -- yes
+
+3. can i create a composite secondary index -- no
+
+4. Can a table have multiple secondary indexes -- yes
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

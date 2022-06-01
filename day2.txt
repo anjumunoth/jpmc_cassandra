@@ -1,0 +1,275 @@
+insert -- timestamp 
+delete -- tombstone -- deletion marker
+
+RDBMS -- design the schema
+1. Identify the entities, relationship
+-- think about the queries --NO 
+-- think about the data -- YES
+2. Model ER diagram, class diagrams
+3. Normalise the data
+4. Insert the data
+5. Query the data
+
+
+3/5 queries are based on join -- join -- costly affair
+1/5 query have a where clause based on a non PK
+
+Items_by_id
+Name search will be not possible -- 
+
+Order by can be performed only on a clustering column
+
+
+items_by_name
+
+select * from items_by_name where name='apple'
+select * from items_by_name where id='i1';//wrong
+select * from items_by_name where name='apple' and id='i1'
+
+
+userid name cartid cart name
+
+u1
+u2
+u3
+
+
+name; tech ; db
+
+e1; java; oracle
+e2; java; sql server
+e3; mainframe; db2
+e4; mainframe ; db2
+
+
+select * from t1 where tech='java'
+PK -- tech(no); name(no);db(no); composite PK -(tech and name)
+
+java e1 ; oracle
+jave e2; sql server 
+
+
+RDBMS;
+
+select count(*) from emp group by deptId;
+Each group -- can have 0 or many records
+
+select count(*) from emp group by empId;
+Each group -- can have only 1 record 
+
+CREATE TABLE employee2 (
+    empid text ,
+    did text,
+    empname text,
+    phonenumber int,
+	  primary key(empid,phonenumber)
+)
+
+insert into employee2 (empid,did,empname,phonenumber) values('E101','d1','sara',56789);
+
+insert into employee2 (empid,did,empname,phonenumber) values('E101','d1','sara',12345);
+
+select * from employee2
+
+
+CREATE TABLE employee_with_salary_desc(
+    empid text,
+    phonenumber int,
+    did text,
+    empname text,
+    PRIMARY KEY (empid, phonenumber)
+) WITH CLUSTERING ORDER BY (phonenumber desc)
+
+CREATE TABLE employee_with_location(
+    empid text,
+	  deptid text,
+    country text,
+    state text,
+    PRIMARY KEY ((country,state))
+)
+
+select * from employee_with_location where country='INDIA';//no
+
+select * from employee_with_location where (country,city)=('INDIA','CHN');//no
+
+create  a new table/MV based on that particular query
+
+CREATE MATERIALIZED VIEW employee_with_did AS
+   SELECT * FROM employee where departmentid is NOT null
+   PRIMARY KEY (departmentid,empid)
+
+select count(*) from emp group by country,state
+
+Materialised view not recommended:
+1. inconsitency;
+2. writes to the table have to be performed on the views as well -- slower my writes;
+3. read from a MV; also synced from the table -- give the fresh data;
+
+CREATE Table emp_with_did(
+	  empid text ,
+    did text,
+    empname text,
+    phonenumber int,
+   PRIMARY KEY (departmentid,empid)
+)
+
+cassandra -- flexible schema
+add a new column to an existing table -- alter table
+hobbies -- collections -- (array; object, tuple-- java );
+java --> cassandra
+class - members is an array;
+mapping b/w 
+
+mongodb -- restrictions; schemaless
+
+
+Create an emp where empid,empname,deptid,hobbies
+create table emp_with_hobbies(
+empid text primary key,
+empname text,
+deptid text,
+hobbies set<text>,
+)
+
+insert into emp_with_hobbies (empid,empname,deptid,hobbies) values('101','sara','d1',{'h1','h2'});
+
+
+set -- stored in an unordered manner but retrieved in ordered
+list -- stored in an ordered manner
+
+update/delete on basis of position in a list
+
+
+1. Can i remove an element from a set using the update
+update emp_with_hobbies set hobbies = hobbies + {'cooking'};
+
+2.update emp_with_hobbies set hobbies = hobbies - {'cooking'};// yes 
+
+3.
+update emp_with_hobbies set hobbies = hobbies - {'h10'}; 
+
+4.
+update emp_with_hobbies_as_list set hobbies[10]='trekking' where empid='101' ;// error
+
+5. update emp_with_hobbies_as_list set hobbies[1]='trekking' where empid='101';
+
+
+create table emp_with_address_as_map(
+empid text primary key,
+empname text,
+deptid text,
+address map<text,text>,
+
+)
+
+insert into emp_with_address_as_map(empid,address) values('101',{'home':'chn','office':'blr'})
+
+update emp_with_address_as_map set address=address+{'permanent':'chn','k1':'v1','k2':'v2'} where empid='101'
+
+update emp_with_address_as_map set address['home']='blr' where empid='101';
+
+1. 
+insert into emp_with_address_as_map(empid,address) values('101',{'home':'chn'})
+
+2. want to delete a single key
+delete address['permanent'] from emp_with_address_as_map where empid='101'
+
+3. want to delete multiple keys k1,k2
+delete address['k1'],address['k2'] from emp_with_address_as_map where empid='101'
+
+update emp_with_address_as_map 
+set address=address- {'k1','k2'} where empid='101'
+
+4. get all the rows which contain key k1
+get all the rows which contain v1
+select * from tablename where address contains key 'k1'
+select * from tablename where address['k1']='v1'
+
+
+5. Can i insert 2 rows which have different address fields
+insert into emp_with_address_as_map(empid,address) values('102',{'temp':'India','future':'Australia'})
+
+Operators:
+= < > <= >= !=
+
+Logical operators
+and 
+
+in, contains, contains key
+
+3 imp functions which can be used only in select
+ttl
+writetime
+maxwritetime -- for collections
+
+
+update emp_with_address_as_map set deptid='d1' where empid='101';
+select ttl(address),writetime(address),maxwritetime(address) from emp_with_address_as_map 
+
+
+order by 
+Shpuld have a where clause on the partition key( = or in)
+1. no clustering key: 
+	order by clause on a non primary key -- no
+   order by clause on a partition key -- no
+   have a secondary index -- yes on field on which there ia a secondary index
+2. when there is a clustering field
+1. there should be a condition on partition key
+sort in both the directions
+CREATE TABLE jpmcsample1.emp_by_deptid (
+    deptid text,
+    empid text,
+    empname text,
+    salary decimal,
+    PRIMARY KEY (deptid, empid)
+) WITH CLUSTERING ORDER BY (empid ASC)
+
+insert into emp_by_deptid(deptid,empid,salary) values('d1','e3',1456);
+
+insert into emp_by_deptid(deptid,empid,salary) values('d1','e2',2456);
+
+insert into emp_by_deptid(deptid,empid,salary) values('d1','e1',4256);
+
+insert into emp_by_deptid(deptid,empid,salary) values('d2','e5',4560);
+
+insert into emp_by_deptid(deptid,empid,salary) values('d2','e4',456456);
+
+CREATE TABLE jpmcsample1.deptid_by_state_by_city (
+    deptid text,
+    state text,
+    city text
+    PRIMARY KEY (deptid,state,city)
+) WITH CLUSTERING ORDER BY (state ASC,city desc)
+
+1.select * from deptid_by_state_by_city where deptid='d1' order by state asc,city desc;// yes
+2.select * from deptid_by_state_by_city where deptid='d1' order by state desc,city asc;//yes
+3.select * from deptid_by_state_by_city where deptid='d1' order by state asc,city asc;//no
+4.select * from deptid_by_state_by_city where deptid='d1' order by state desc,city desc;//no
+5.select * from deptid_by_state_by_city where deptid='d1' order by city desc,state asc;//no
+
+RDBMS:
+select * from emp order by empname,salary
+select * from emp order by salary,empname
+
+
+1. Existing data -- upsert
+2. upsert -- violation of primary key- update
+
+COPY books (book_id, category, title, author, publisher, pub_date, number_pages) FROM 'C:\Users\anjum\OneDrive\Desktop\jpmc_cassandra\books\book_entries.csv' WITH HEADER=True AND DELIMITER='|';
+
+
+COPY books (book_id, category, title, author, publisher, pub_date, number_pages) FROM 'C:\Users\anjum\OneDrive\Desktop\jpmc_cassandra\books\books2.csv' WITH HEADER=True AND DELIMITER='|';
+
+
+
+
+
+
+
+
+
+
+
+
+
+

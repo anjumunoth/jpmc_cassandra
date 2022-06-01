@@ -1,0 +1,497 @@
+Why cassandra?
+-- no sql 
+-- unstructured
+-- when to use cassandra
+-- trend 
+-- data has changed - structure; volume; 
+-- csv 
+-- schema of table (data type, constraints) 
+-- ETL 
+-- flexible schema
+-- Analytics of data; data explosion; data mining;
+-- async ; speed; ACID; requirements of different applications;
+-- distributed; no single point of failure;
+-- 
+
+
+Employee -- empId, empName,salary,hobbies
+3 tables 
+emp - empId, empName,salary
+hobbies -- hobbiesId, description
+emp_hobbies -- empId, hobbiesId
+
+modifications -- across different tables
+
+joins of the tables inner join 
+write a query -- empname and his/her hobbies
+inner join of 3 tables -- costly affair
+
+when not to use RDBMS : 
+1. flexible schema -- 
+bank a/c 
+HDFC 
+add aadhaar:
+-- added a new column to the existing table 
+-- created the table -- a/c no, aadhaar number
+
+
+Vertical scaling:
+increase the memory/ cpu -- 512gb
+
+Horizontal scaling:
+2 laptops 
+1-- office -- 256gb
+2-- personal data -- 256gb -- set of nodes where replicated data is present 
+
+single laptop is not working:  -- access the data -- no; 
+HS : personal laptop -- not working -- only personal -- no
+vertical scaling -- costly 
+
+Sale --- limited time ; huge discounts -- traffic more ; transactions may be more
+
+traffic more -- add more resources 
+to the existing system 
+   512gb; 16gb ram
+
+1.increase the cpu and memory of single server -- 2 tb; 64gb ram
+ 
+2. more machines -- 10 servers; 256 gb; 4gb
+traffic goes down -- decommission the extra servers
+failure -- no single point of failure
+
+redundancy -- 10 servers -- same replicated data
+
+
+Each node -- will be in a different system(in different physical locations)
+
+Types of no-sql :
+1. Key value based -- redis
+Unique key -- value (record)
+101 : {empName:"sara",salary:567}
+102: "lara"
+
+2. Document based -- mongodb
+
+bson document -- object in javascript
+{empId:101,empName:"sara",salary:567}
+{empId:102,firstName:"lara",lastName:"dutta",salary:567}
+{empId:103,deptId:"d1"}
+{empId:103,firstName:"tara"}
+
+4 documents will be inserted;
+1. no primary key 
+2. there is a special field _id -- auto generated/inserted; mandatory for all the docs; works like primary key; immutable; 
+unique index on the _id by default
+
+
+
+db.emp.find({salary:101})
+
+3. graph based database
+
+4. colimn based 
+
+query first approach
+divide the books first by topic
+
+within each topic -- arrange in alphabetical order of bookname
+
+easy to search :search by topic
+
+user -- search by topic
+topic -- partition key 
+1. mongodb
+   Advanced mongodb
+Introduction to mongodb
+2. nodejs
+
+3. cassandra
+
+opening a library in a school
+
+1st
+mongodb
+nodejs
+cassandra
+
+2nd
+mongodb
+nodejs
+
+3rd
+nodejs 
+cassandra
+
+Primary key -- consist of mandatory partition key and optional clustering key
+
+nosql -- CAP theorem
+
+C- Consistency
+A - Available
+P - partition tolerance -- break up data across diffrence physical server
+
+
+keyspace -- replication factor-- same data should be replicated in n number of nodes
+
+replication factor < = nodes in cluster
+replication strategy
+
+RF : 3;
+
+data center;
+rack;
+
+dlf chennai: 
+LTI -- tower3, tower7,tower8
+
+dlf - bangalore
+LTI -- Block 1, block4
+
+emp id 
+empId:E101	empName: sara	
+empId:E102	empName: tara	
+empId:E103	empName:lara	
+
+Partitioner -- convert the partition key into hash value
+Partition key --> token
+E101 --> 25
+E102 --> 75
+E103 --> 55
+
+Cluster -- 4 nodes 
+Ring architecture
+
+Token range
+0 to 100
+
+Node -- 256 tokens range
+
+hashed value -- token -- 64 bit integer
+range of value -2^63 to 2^63-1
+
+int i ; // i -- 4 bytes
+range of values which i can store in i;
+i = -2^31 to 2^31
+
+Node 1 -- 0 to 25
+Node 2 -- 26 to 50
+Node 3 -- 51 to 75
+Node 4 -- 76 to 100
+
+100/4=25
+
+100/5 = 20
+Redistribute the data among all the nodes and their tokens will also change and there is alot of movement of data
+Node 1 -- 0 to 20(send 5 set of partition from node 1 to node2)
+node 2 -- 21 to 40
+Node 5- 
+
+Consistent hashing and virtual nodes:
+
+hash value : 
+
+
+1. simple strategy
+2. network strategy
+
+simple strategy : data is replicated 3 times or on 3 servers
+rack -unaware strategy
+3 servers on which data is replicated can be in same data center or in different data centers
+
+data center -- chennai; bangalore
+rack within a data center
+
+
+network strategy:
+ data is replicated such that they are in different data centers and if possible in different racks
+
+2 nodes 
+10000 op/sec
+
+4 nodes 
+20000 op/sec
+
+8 nodes 
+40000 op/sec
+
+apple -- 75000 nodes of cassandra 
+facebook -- 25000 nodes 
+Pb 
+
+Consistency level:
+
+Cassandra - AP ; Eventual consistency
+
+empId:E101	empName: sara	
+empId:E102	empName: tara	
+empId:E103	empName:lara	
+empId:E104	empName:lara	
+empId:E105	empName:lara	
+empId:E106	empName:lara	
+empId:E107	empName:lara	
+
+7 node in the cluster
+
+RF - 3; 3 nodes will hold replicated data
+
+update emp set empName='veena' where empId='E104'
+consistency 
+
+write consistency - 1
+--> client --> write op --> coordinator --> hash('E104') = 55;N3,n4,n5; --> once a single node out of n3,n4,n5 have fininshed the process the writing -- coordinator -- ack back to the client; eventually the other 2 will complete;
+
+client --> coord--> n3 has completed; ack ;
+before n4 and n5 has completed
+lets say there is a read op for the same partition
+probability of stale data -- 66%
+
+
+
+update emp set empName='veena' where empId='E104'
+consistency 
+
+write consistency - 2
+--> client --> write op --> coordinator --> hash('E104') = 55;N3,n4,n5; --> once two nodes out of n3,n4,n5 have fininshed the process the writing -- coordinator -- ack back to the client; eventually the other 1 will complete
+
+write consistency - quorum (7 nodes ; 4 - majority)
+RF- 5
+
+best value -- quorum;
+
+read consistency -- 1, 2 , quorum, local
+
+read consistency -1;Rf-3
+
+select * from emp where empId=E104
+
+client --> coordinator --> get the hashed for E104 == 55;--> data with token 55 is in n3,n4,n5; coordinator will send the read request to 3 nodes;once it has got the response from any one node --> simple send it to the client
+
+read consistency -2;Rf-3
+
+select * from emp where empId=E104
+
+client --> coordinator --> get the hashed for E104 == 55;--> data with token 55 is in n3,n4,n5; coordinator will send the read request to 3 nodes;n3 responded first; n4 --second and n5-- third;
+coord will take the data from n3;from n4 also take perform hashed value of data and check if data from n3 and n4 is same; if same send the data from n3;but if they are different -- inconsistency;
+last write win strategy ; --last written data send it to the client
+
+
+read consistency -quorum;Rf-5; 7 node cluster
+
+select * from emp where empId=E104
+
+client --> coordinator --> get the hashed for E104 == 55;--> data with token 55 is in n3,n4,n5; coordinator will send the read request to 5 nodes;n3 responded first; n4 --second and n5-- third;n6-third
+coord will take the data from n3;from n4 also take perform hashed value of data and check if data from n3 and n4 is same; if same send the data from n3;but if they are different -- inconsistency;
+last write win strategy ; --last written data send it to the client
+
+read consistency -- all ;;
+
+create table employee(
+column_name datatype,
+column_name datatype,
+column_name datatype,
+column_name datatype, 
+)
+
+create table  employee(
+empId text primary key,
+empName text,
+salary decimal,
+departmentId text
+)
+
+Primary key -- empId; 
+partition key -- empId
+clustering key -- no
+
+Each partition can have only one row;
+
+
+create table emp_by_deptId(
+empId text,
+empName text,
+salary decimal,
+deptId text,
+primary key(deptId,empId)
+)
+
+select * from emp_by_deptId where deptId='d1'
+n rows from one partition; all data from a single of a node
+
+clustering key and partition key together form the primary key
+
+Primary key -- deptId,empId; 
+partition key -- deptId
+clustering key -- empId
+
+
+create table emp_by_deptId_name(
+firstName text,
+lastName text,
+middleName text,
+salary decimal,
+departmentId text,
+primary key(deptId,firstName,lastName,middleName)
+)
+
+Can the partition key be composite -- yes
+create table emp_by_location_empId(
+empId text,
+firstName text,
+lastName text,
+middleName text,
+salary decimal,
+city text,
+country text
+primary key((country,city),empId)
+)
+
+
+
+create table employee2(
+empId text ,
+firstName text,
+lastName text,
+'middleName' text ,
+salary decimal,
+primary key(empId,middlename)
+)
+
+
+insert into employee(empId,empName,departmentId,salary) values('E101','sara','d1',567);
+
+insert into employee(empId,empName,departmentId,salary) values('E105','john','d1',null);
+
+insert into employee(empId,empName,departmentId) values('E101','sara','d1');
+
+insert into employee(empId,empName,departmentId,salary) values('E105','bala','d1',56789);
+
+ttl -- total time to live
+insert into employee(empId,empName,departmentId,salary) values('E108','harry','d1',56789) using ttl 20;
+
+Use case :
+
+table current_users
+session time -- 30 minutes
+
+insert into current_users ... using ttl 1800;
+
+insert into employee(empId,empName) values('E109','harry') using ttl 20;// 5:22:01
+
+insert into employee(empId,departmentId) values('E109','d2') using ttl 60;//5:22:02
+
+what will happen after 20 sec and before 60 seconds
+1. entire row will get deleted
+2. only empName column will get deleted
+3. only empName value will get deleted
+
+
+creating a table with ttl 120 sec;
+insert a rec E101 at 5:00; expire at 5:02
+insert a rec E102 at 6:00; expire at 6:02
+
+insert a rec with a ttl 60 sec;
+when will the rec be deleted : 60 sec or 120 sec
+
+int i=10;
+i=100;
+SOP(i);// 100
+
+Product apple =new Product("p1","mac book",34567);
+apple.productId="p1";//4:52
+apple.price=34577;//4:53
+apple.price =100;//4.54
+SOP(apple.price);//100
+SOP(apple.productId);//p1
+
+cassandra
+insert into employee(empId,empName,departmentId,salary) values('E105','bala','d1',56789);// 4:52
+
+insert into employee(empId,empName,departmentId,salary) values('E105','bala','d1',56789);//5:00
+
+
+insert -- write op(4:52) --> make an entry commit log; and make an entry in  memtable;
+
+insert -- write op(5:00) --> will not check if the row already exists with the same PK --> make an entry commit log; make an entry in memtable;
+
+once commit log grace period has expired or if the memtable is full -- write  data in the disk --> compaction --> merge the 2 rows on basis of time -->last write win strategy--> immutable ss tables
+
+
+insert into employee(empId,empName) values('E105','bala');// 4:52
+
+insert into employee(empId,departmentId,salary) values('E105','d1',56789);// 4:54
+
+
+at 5: 00
+
+select * from employee where empId='E105'
+
+insert into employee()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
